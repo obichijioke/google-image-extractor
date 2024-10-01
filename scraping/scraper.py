@@ -6,13 +6,20 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from threading import Thread, Lock
 from urllib import parse
 import time
+import os
+import requests
+from urllib.parse import urlparse
 
 class Scraper:
     
-    def __init__(self, num_threads = 1, show_ui = True) -> None:
+    def __init__(self, num_threads = 1, show_ui = True, download_path = 'downloaded_images') -> None:
         self.__num_threads = num_threads
         self.__show_ui = show_ui
         self.__drivers = []
+        self.__download_path = download_path
+        
+        if not os.path.exists(self.__download_path):
+            os.makedirs(self.__download_path)
 
         self._initialize_scraper()
 
@@ -127,6 +134,23 @@ class Scraper:
         url = f"https://www.google.com/search?{parsed_query}&source=lnms&tbm=isch&sa=X&ved=2ahUKEwjR5qK3rcbxAhXYF3IKHYiBDf8Q_AUoAXoECAEQAw&biw=1291&bih=590"
         return url
 
+    def _download_image(self, url, query):
+        try:
+            response = requests.get(url, stream=True, timeout=10)
+            if response.status_code == 200:
+                file_extension = os.path.splitext(urlparse(url).path)[1]
+                if not file_extension:
+                    file_extension = '.jpg'
+                filename = f"{query}_{time.time()}{file_extension}"
+                filepath = os.path.join(self.__download_path, filename)
+                with open(filepath, 'wb') as file:
+                    for chunk in response.iter_content(1024):
+                        file.write(chunk)
+                return filepath  # Return just the filepath, not the full absolute path
+        except Exception as e:
+            print(f"Error downloading image: {str(e)}")
+        return None
+
     def scrape(self, query, count):
         self.__threads_pool = []
         self.__shared_index = 0
@@ -139,7 +163,14 @@ class Scraper:
         self._create_threads()
         self._destroy_threads()
         end = time.time()
-        print(len(self.__images))
+        print(f"🤖: Found {len(self.__images)} image links!")
         
-        print(f"Total elapsed time for {self.__image_limit} images is: {(end - start) / 60} mins")
-        return self.__images
+        print("Downloading images...")
+        downloaded_images = []
+        for url in self.__images:
+            filepath = self._download_image(url, query)
+            if filepath:
+                downloaded_images.append(filepath)
+        
+        print(f"Total elapsed time for {self.__image_limit} images is: {(end - start) / 60:.2f} mins")
+        return downloaded_images

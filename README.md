@@ -12,7 +12,7 @@ Google Images Scraper is a Python tool designed to scrape high-resolution images
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
 - [License](#license)
-<br>
+  <br>
 
 ## Installation
 
@@ -33,6 +33,7 @@ Google Images Scraper is a Python tool designed to scrape high-resolution images
    ```bash
    python -m venv .venv
    ```
+
 4. Activate the Virtual Environment:
 
    ```bash
@@ -40,19 +41,20 @@ Google Images Scraper is a Python tool designed to scrape high-resolution images
    source .venv/bin/activate
 
    # For Windows
-   
+
    # For Powershell
    .venv/Scripts/Activate.ps1
    # For Command Prompt
    .venv/Scripts/activate.bat
    ```
 
-4. Install the required dependencies:
+5. Install the required dependencies:
 
    ```bash
    pip install -r requirements.txt
    ```
-<br>
+
+   <br>
 
 ## Usage
 
@@ -87,7 +89,7 @@ You can customize the behavior of the scraper by modifying the `config.yaml` fil
 ### Images Limit
 
 - `images_limit`: Set the maximum number of images to download per category.
-<br>
+  <br>
 
 ### Project Info
 
@@ -99,7 +101,7 @@ You can customize the behavior of the scraper by modifying the `config.yaml` fil
 - `config.yaml`: Configuration file to set up email and scraping parameters.
 - `link_saver.py`: Handles saving image links.
 - `main.py`: The main entry point for running the Google Images Scraper.
-<br>
+  <br>
 
 ## Getting Started
 
@@ -124,7 +126,7 @@ The rest of the process is straightforward:
 6. The scraper will start fetching high-resolution images from Google Images based on the provided links and configurations, using the specified number of threads and UI visibility.
 
 7. Monitor the scraping progress and any notifications sent via email, as configured in `config.yaml`.
-<br>
+   <br>
 
 ## Contributing
 
@@ -136,11 +138,34 @@ Contributions to Google Images Scraper are welcome and encouraged! To contribute
 4. Commit your changes with descriptive commit messages.
 5. Push your changes to your fork.
 6. Open a pull request, explaining the changes you've made.
-<br>
+   <br>
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
 
 ## Disclaimer
+
 This program lets you download tons of images from Google Images. Please do not download or use any image that violates its copyright terms.
+
+## Google Images Scraper API
+
+This project provides an API for scraping image links from Google Images based on given queries.
+
+## Setup
+
+1. Install the required packages:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Make sure you have Chrome and ChromeDriver installed and properly configured.
+
+## Running the API
+
+Run the Flask application:
+
+```
+python app.py
+```
