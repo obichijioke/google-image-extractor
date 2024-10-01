@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 class Scraper:
     
-    def __init__(self, num_threads = 1, show_ui = True, download_path = 'downloaded_images') -> None:
+    def __init__(self, num_threads = 1, show_ui = True, download_path = '/app/downloaded_images') -> None:
         self.__num_threads = num_threads
         self.__show_ui = show_ui
         self.__drivers = []
@@ -44,11 +44,12 @@ class Scraper:
             thread.join()
 
     def _create_driver(self):
-        self.__options = webdriver.ChromeOptions()
-        self.__options.add_argument("incognito")
-        if not self.__show_ui:
-            self.__options.add_argument("headless")
-        driver = webdriver.Chrome()
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        
+        driver = webdriver.Chrome(options=chrome_options)
         driver.get("https://www.google.com/imghp?hl=en")
         self.__drivers.append(driver)
 
