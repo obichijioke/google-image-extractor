@@ -7,7 +7,7 @@ import time
 
 class Downloader:
 
-    def __init__(self, path, min_num_threads = 5) -> None:
+    def __init__(self, path, min_num_threads = 1) -> None:
         self.__path = path
         self.__min_num_threads = min_num_threads
 

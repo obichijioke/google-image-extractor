@@ -10,7 +10,7 @@ image_path: "./image_downloads"
 
 # Queries
 search_queries:
-  - home tennis court
+  - mercedes benz e class 2017
 
 # Max Image Limit
-images_limit: 700
+images_limit: 5

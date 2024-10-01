@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from threading import Thread, Lock
 from urllib import parse
 import time
@@ -48,7 +49,7 @@ class Scraper:
         def get_thumbnails():
             try:
                 print("\nFetching image thumbnails...")
-                thumbnails = driver.find_elements(By.XPATH, "//div[@class='isv-r PNCib ViTmJb BUooTd']")
+                thumbnails = driver.find_elements(By.XPATH, "//div[@class='eA0Zlc WghbWd FnEtTd mkpRId m3LIae RLdvSe qyKxnc ivg-i PZPZlf GMCzAd']")
                 print(f"🤖: Found {len(thumbnails)} image thumbnails!")
             except Exception as e:
                 print("\n🔴🔴 Error while fetching image containers! 🔴🔴")
@@ -77,9 +78,19 @@ class Scraper:
         time.sleep(2)
         return thumbnails
 
+    def _accept_cookies(self, driver):
+        try:
+            print("Attempting to accept cookies...")
+            wait = WebDriverWait(driver, 10)
+            accept_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Accept all')]")))
+            accept_button.click()
+            print("Cookies accepted successfully!")
+        except (TimeoutException, NoSuchElementException):
+            print("No cookie consent popup found or unable to interact with it.")
+
     def _get_images(self, driver):
-        # driver = webdriver.Chrome()
         driver.get(self.__url)
+        self._accept_cookies(driver)  # Add this line to call the new function
         thumbnails = self._load_thumbnails(driver)
         
         wait = WebDriverWait(driver, 10)
@@ -96,8 +107,8 @@ class Scraper:
                     thumbnails[index].click()
                     # print(index)
                     time.sleep(2)
-                    wait.until(EC.visibility_of_element_located((By.XPATH, """//img[@class='sFlh5c pT0Scc iPVvYb']""")))
-                    img_window = driver.find_element(By.XPATH, """//img[@class='sFlh5c pT0Scc iPVvYb']""")
+                    wait.until(EC.visibility_of_element_located((By.XPATH, """//img[@class='sFlh5c FyHeAf iPVvYb']""")))
+                    img_window = driver.find_element(By.XPATH, """//img[@class='sFlh5c FyHeAf iPVvYb']""")
                     # time.sleep(2)
                     link = img_window.get_attribute('src')
                     self.__images.add(link)
