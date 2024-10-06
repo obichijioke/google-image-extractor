@@ -8,6 +8,7 @@ import time
 import os
 import requests
 from urllib.parse import urlparse
+import uuid
 
 class Scraper:
     
@@ -114,7 +115,9 @@ class Scraper:
                     file_extension = '.jpg'
                 # Remove spaces from query and use underscores instead
                 sanitized_query = query.replace(' ', '_')
-                filename = f"{sanitized_query}_{int(time.time())}{file_extension}"
+                # Use UUID to ensure unique filenames
+                unique_id = uuid.uuid4().hex[:8]
+                filename = f"{sanitized_query}_{unique_id}{file_extension}"
                 filepath = os.path.join(self.__download_path, filename)
                 with open(filepath, 'wb') as file:
                     for chunk in response.iter_content(1024):
