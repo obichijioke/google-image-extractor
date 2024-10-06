@@ -3,7 +3,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from threading import Thread, Lock
 from urllib import parse
 import time
 import os
@@ -12,46 +11,26 @@ from urllib.parse import urlparse
 
 class Scraper:
     
-    def __init__(self, num_threads = 1, show_ui = True, download_path = '/app/downloaded_images') -> None:
-        self.__num_threads = num_threads
-        self.__show_ui = show_ui
-        self.__drivers = []
+    def __init__(self, show_ui=False, download_path='/app/downloaded_images'):
+        self.__show_ui = show_ui  # Allow this to be set by the parameter
         self.__download_path = download_path
         
         if not os.path.exists(self.__download_path):
             os.makedirs(self.__download_path)
 
-        self._initialize_scraper()
-
-    def _initialize_scraper(self):
-        pool = []
-        for i in range(self.__num_threads):
-            thread = Thread(target = self._create_driver)
-            pool.append(thread)
-            thread.start()
-        
-        for thread in pool:
-            thread.join()
-            
-    def _create_threads(self):
-        for i in range(self.__num_threads):
-            thread = Thread(target = self._get_images, args = (self.__drivers[i],))
-            self.__threads_pool.append(thread)
-            thread.start()
-
-    def _destroy_threads(self):
-        for thread in self.__threads_pool:
-            thread.join()
+        self.__driver = self._create_driver()
 
     def _create_driver(self):
         chrome_options = webdriver.ChromeOptions()
+        # Remove the headless option
+        # if not self.__show_ui:
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         
         driver = webdriver.Chrome(options=chrome_options)
         driver.get("https://www.google.com/imghp?hl=en")
-        self.__drivers.append(driver)
+        return driver
 
     def _load_thumbnails(self, driver):
         def get_thumbnails():
@@ -62,6 +41,7 @@ class Scraper:
             except Exception as e:
                 print("\n🔴🔴 Error while fetching image containers! 🔴🔴")
             return thumbnails
+        
         thumbnails = get_thumbnails()
 
         while len(thumbnails) < self.__image_limit:
@@ -75,7 +55,6 @@ class Scraper:
                 no_more_results = driver.find_element(By.XPATH, """//div[@class='OuJzKb Yu2Dnd']""").is_displayed()
                 if end_of_page:
                     driver.find_element(By.XPATH, """//input[@class='LZ4I']""").click()
-
                 if no_more_results:
                     break
             except Exception as e:
@@ -97,37 +76,28 @@ class Scraper:
             print("No cookie consent popup found or unable to interact with it.")
 
     def _get_images(self, driver):
-        driver.get(self.__url)
-        self._accept_cookies(driver)  # Add this line to call the new function
+        self._accept_cookies(driver)
         thumbnails = self._load_thumbnails(driver)
         
         wait = WebDriverWait(driver, 10)
         print("\nFetching Links...")
 
-        while len(self.__images) < self.__image_limit:   
-            self.__shared_index_lock.acquire()
-            index = self.__shared_index
-            self.__shared_index += 1
-            self.__shared_index_lock.release()
+        images = set()
+        for index in range(min(len(thumbnails), self.__image_limit)):
             try:
-                if not index >= self.__image_limit:
-                    # print(len(self.__images))
-                    thumbnails[index].click()
-                    # print(index)
-                    time.sleep(2)
-                    wait.until(EC.visibility_of_element_located((By.XPATH, """//img[@class='sFlh5c FyHeAf iPVvYb']""")))
-                    img_window = driver.find_element(By.XPATH, """//img[@class='sFlh5c FyHeAf iPVvYb']""")
-                    # time.sleep(2)
-                    link = img_window.get_attribute('src')
-                    self.__images.add(link)
-                    print(link)
-                else:
-                    print("✔️✔️✔️ Links Scraping complete! ✔️✔️✔️")
-                    break
-                                    
+                thumbnails[index].click()
+                time.sleep(2)
+                wait.until(EC.visibility_of_element_located((By.XPATH, """//img[@class='sFlh5c FyHeAf iPVvYb']""")))
+                img_window = driver.find_element(By.XPATH, """//img[@class='sFlh5c FyHeAf iPVvYb']""")
+                link = img_window.get_attribute('src')
+                images.add(link)
+                print(link)
             except Exception as e:
                 print(" \n🔴🔴 Link not found! 🔴🔴")
                 continue
+
+        print("✔️✔️✔️ Links Scraping complete! ✔️✔️✔️")
+        return images
 
     @staticmethod
     def create_url(search_query):
@@ -142,36 +112,36 @@ class Scraper:
                 file_extension = os.path.splitext(urlparse(url).path)[1]
                 if not file_extension:
                     file_extension = '.jpg'
-                filename = f"{query}_{time.time()}{file_extension}"
+                # Remove spaces from query and use underscores instead
+                sanitized_query = query.replace(' ', '_')
+                filename = f"{sanitized_query}_{int(time.time())}{file_extension}"
                 filepath = os.path.join(self.__download_path, filename)
                 with open(filepath, 'wb') as file:
                     for chunk in response.iter_content(1024):
                         file.write(chunk)
-                return filepath  # Return just the filepath, not the full absolute path
+                return filepath
         except Exception as e:
             print(f"Error downloading image: {str(e)}")
         return None
 
     def scrape(self, query, count):
-        self.__threads_pool = []
-        self.__shared_index = 0
-        self.__shared_index_lock = Lock()
-        self.__images = set()
-
-        self.__url = self.create_url(query)
         self.__image_limit = count
+        self.__driver.get(self.create_url(query))
+        
         start = time.time()
-        self._create_threads()
-        self._destroy_threads()
-        end = time.time()
-        print(f"🤖: Found {len(self.__images)} image links!")
+        images = self._get_images(self.__driver)
         
         print("Downloading images...")
         downloaded_images = []
-        for url in self.__images:
+        for url in images:
             filepath = self._download_image(url, query)
             if filepath:
                 downloaded_images.append(filepath)
         
-        print(f"Total elapsed time for {self.__image_limit} images is: {(end - start) / 60:.2f} mins")
+        end = time.time()
+        print(f"Total elapsed time for {len(downloaded_images)} images is: {(end - start) / 60:.2f} mins")
         return downloaded_images
+
+    def __del__(self):
+        if hasattr(self, '__driver'):
+            self.__driver.quit()
